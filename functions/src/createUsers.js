@@ -1,6 +1,8 @@
 const admin = require('./utils/admin')
 const getImageUrls = require('./getImageUrls')
 
+let urls = []
+
 const users = [
   {
     displayName: 'Hồng Ngọc',
@@ -222,29 +224,31 @@ const getRandomNumber = (min, max, picked) => {
 }
 
 const createUser = async (user, userAuth) => {
-  delete user.age
-  const picked = []
+  try {
+    delete user.age
+    const picked = []
 
-  const urls = await getImageUrls()
+    const images = Array.from({length: 6}).reduce((acc, val, idx) => {
+      const num = getRandomNumber(0, 42, picked)
 
-  const images = Array.from({length: 6}).reduce((acc, val, idx) => {
-    const num = getRandomNumber(0, 42, picked)
+      const {uri, thumbnail, medium} = urls[num]
+      picked.push(num)
+      return {...acc, [idx]: {uri, thumbnail, medium}}
+    }, {})
 
-    const {uri, thumbnail} = urls[num]
-    picked.push(num)
-    return {...acc, [idx]: {uri, thumbnail}}
-  }, {})
+    const defaultAvatarURL = images['0'].medium
 
-  const defaultAvatarURL = images['0'].thumbnail
-
-  await admin
-    .firestore()
-    .doc(`users/${userAuth.uid}`)
-    .set({
-      ...user,
-      avatarURL: defaultAvatarURL,
-      photos: images,
-    })
+    await admin
+      .firestore()
+      .doc(`users/${userAuth.uid}`)
+      .set({
+        ...user,
+        avatarURL: defaultAvatarURL,
+        photos: images,
+      })
+  } catch (error) {
+    console.log(error.message)
+  }
 }
 
 const createUsers = async () => {
@@ -256,6 +260,7 @@ const createUsers = async () => {
       displayName: user.displayName,
       disabled: false,
     })
+    urls = await getImageUrls()
     await createUser(user, userAuth)
     console.log('Successfully created new user:', user.email)
   }
