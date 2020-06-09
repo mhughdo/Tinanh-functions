@@ -148,7 +148,7 @@ const users = [
     email: 'test12@gmail.com',
   },
   {
-    displayName: 'Nhàn VŨ',
+    displayName: 'Nhàn Vũ',
     age: 20,
     school: 'VNU',
     bio: 'This is a bio',
@@ -243,6 +243,7 @@ const createUser = async (user, userAuth) => {
       .doc(`users/${userAuth.uid}`)
       .set({
         ...user,
+        id: userAuth.uid,
         avatarURL: defaultAvatarURL,
         photos: images,
       })

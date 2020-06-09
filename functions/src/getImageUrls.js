@@ -15,7 +15,7 @@ const getImageUrls = async () => {
         const formatted = fileName
           .replace('images/', '')
           .replace('_400x400', '')
-          .replace('_100x100', '')
+          .replace('_50x50', '')
           .replace('_800x800', '')
           .replace('.png', '')
 
@@ -34,7 +34,7 @@ const getImageUrls = async () => {
             downloadUrls[formatted].medium = downloadUrl
           } else if (!fileName.includes('x')) {
             downloadUrls[formatted].uri = downloadUrl
-          } else if (fileName.includes('_100x100')) {
+          } else if (fileName.includes('_50x50')) {
             downloadUrls[formatted].thumbnail = downloadUrl
           }
         }
@@ -46,7 +46,6 @@ const getImageUrls = async () => {
     thumbnail: downloadUrls[name].thumbnail,
     medium: downloadUrls[name].medium,
   }))
-
   return final
 }
 
