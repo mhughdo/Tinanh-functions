@@ -40,7 +40,28 @@ exports.swipedRight = functions.https.onCall(async (data, context) => {
     }, { merge: true })
     return { matches: false }
   }
+});
 
-  // console.log(context.auth)
+exports.swipedLeft = functions.https.onCall(async (data, context) => {
+  try {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
+    }
 
+    const dislikedUserID = data?.id
+    if (!context.auth) {
+      throw new functions.https.HttpsError('not-found', 'disliked user id not found')
+    }
+    const user = await getUser(context.auth.uid)
+    const dislikedUser = await getUser(dislikedUserID)
+
+    admin.firestore().doc(`users/${user?.id}`).set({
+      dislikedUser: [...(user?.dislikedUser || []), dislikedUser?.id],
+    }, { merge: true }).then(() => console.log(`Disliked user ${dislikedUser?.displayName} successfully!`)).catch(error => console.log(error.message))
+
+  } catch (error) {
+    throw new functions.https.HttpsError('unknown', error.message);
+  }
+
+  return
 });
