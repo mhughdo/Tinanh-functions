@@ -234,7 +234,7 @@ const createUser = async (user, userAuth) => {
         await admin
             .firestore()
             .doc(`users/${userAuth.uid}`)
-            .set(Object.assign(Object.assign({}, user), { id: userAuth.uid, avatarURL: defaultAvatarURL, photos: images }));
+            .set(Object.assign(Object.assign({}, user), { id: userAuth.uid, avatarURL: defaultAvatarURL, photos: images, isLiked: [], disLiked: [], matches: [] }));
     }
     catch (error) {
         console.log(error.message);

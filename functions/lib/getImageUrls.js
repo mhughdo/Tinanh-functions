@@ -37,7 +37,7 @@ const getImageUrls = async () => {
             }
         }
     }
-    const final = Object.keys(downloadUrls).map(name => ({
+    const final = Object.keys(downloadUrls).map((name) => ({
         uri: downloadUrls[name].uri,
         thumbnail: downloadUrls[name].thumbnail,
         medium: downloadUrls[name].medium,

@@ -18,12 +18,12 @@ const deleteFirestoreUser = async () => {
 function listAllAuthUsers(nextPageToken) {
     const users = [];
     // List batch of users, 1000 at a time.
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         admin
             .auth()
             .listUsers(1000, nextPageToken)
-            .then(function (listUsersResult) {
-            listUsersResult.users.forEach(function (userRecord) {
+            .then((listUsersResult) => {
+            listUsersResult.users.forEach((userRecord) => {
                 // console.log('user', userRecord.toJSON())
                 users.push(userRecord.toJSON());
             });
@@ -35,7 +35,7 @@ function listAllAuthUsers(nextPageToken) {
                 resolve(users);
             }
         })
-            .catch(function (error) {
+            .catch((error) => {
             console.log('Error listing users:', error);
         });
     });
