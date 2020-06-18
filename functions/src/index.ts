@@ -182,3 +182,43 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
         return []
     }
 })
+
+exports.unMatch = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!')
+    }
+
+    try {
+        const unMatchUserID = data?.id
+        const userID = context.auth.uid
+        if (!unMatchUserID) {
+            throw new functions.https.HttpsError('not-found', 'unMatch user id not found')
+        }
+
+        const user = await getUser(userID)
+        const userData = user.data()
+
+        const unMatchUser = await getUser(unMatchUserID)
+        const unMatchUserData = unMatchUser.data()
+
+        user.ref.set(
+            {
+                matches: userData?.matches?.filter((match) => match.id !== unMatchUserID),
+                messages: userData?.messages?.filter((message) => !message.userIDs.includes(unMatchUserID)),
+            },
+            {merge: true}
+        )
+
+        unMatchUser.ref.set(
+            {
+                matches: unMatchUserData?.matches?.filter((match) => match.id !== userID),
+                messages: unMatchUserData?.messages?.filter((message) => !message.userIDs.includes(userID)),
+            },
+            {merge: true}
+        )
+        return true
+    } catch (error) {
+        console.log(error.message)
+        return false
+    }
+})

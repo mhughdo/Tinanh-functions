@@ -168,4 +168,34 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
         return [];
     }
 });
+exports.unMatch = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d;
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
+    }
+    try {
+        const unMatchUserID = data === null || data === void 0 ? void 0 : data.id;
+        const userID = context.auth.uid;
+        if (!unMatchUserID) {
+            throw new functions.https.HttpsError('not-found', 'unMatch user id not found');
+        }
+        const user = await getUser(userID);
+        const userData = user.data();
+        const unMatchUser = await getUser(unMatchUserID);
+        const unMatchUserData = unMatchUser.data();
+        user.ref.set({
+            matches: (_a = userData === null || userData === void 0 ? void 0 : userData.matches) === null || _a === void 0 ? void 0 : _a.filter((match) => match.id !== unMatchUserID),
+            messages: (_b = userData === null || userData === void 0 ? void 0 : userData.messages) === null || _b === void 0 ? void 0 : _b.filter((message) => !message.userIDs.includes(unMatchUserID)),
+        }, { merge: true });
+        unMatchUser.ref.set({
+            matches: (_c = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.matches) === null || _c === void 0 ? void 0 : _c.filter((match) => match.id !== userID),
+            messages: (_d = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.messages) === null || _d === void 0 ? void 0 : _d.filter((message) => !message.userIDs.includes(userID)),
+        }, { merge: true });
+        return true;
+    }
+    catch (error) {
+        console.log(error.message);
+        return false;
+    }
+});
 //# sourceMappingURL=index.js.map
