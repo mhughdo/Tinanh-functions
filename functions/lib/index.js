@@ -62,8 +62,8 @@ const createMessageBox = async (user, likedUser) => {
         }, { merge: true });
         likedUser.ref.set({
             messages: [
-                ...(((_h = user.data()) === null || _h === void 0 ? void 0 : _h.messages) || []),
-                { messageBoxID: messageBoxRef.id, userIDs: [user.data().id, likedUser.data().id] },
+                ...(((_h = likedUser.data()) === null || _h === void 0 ? void 0 : _h.messages) || []),
+                { messageBoxID: messageBoxRef.id, userIDs: [likedUser.data().id, user.data().id] },
             ],
         }, { merge: true });
         return messageBoxRef.id;
@@ -131,7 +131,7 @@ exports.swipedLeft = functions.https.onCall(async (data, context) => {
         const dislikedUserData = dislikedUser.data();
         userRef
             .set({
-            dislikedUser: [...((userData === null || userData === void 0 ? void 0 : userData.disLiked) || []), dislikedUserData === null || dislikedUserData === void 0 ? void 0 : dislikedUserData.id],
+            disLiked: [...((userData === null || userData === void 0 ? void 0 : userData.disLiked) || []), dislikedUserData === null || dislikedUserData === void 0 ? void 0 : dislikedUserData.id],
         }, { merge: true })
             .then(() => console.log(`Disliked user ${dislikedUserData === null || dislikedUserData === void 0 ? void 0 : dislikedUserData.displayName} successfully!`))
             .catch((error) => console.log(error.message));
@@ -166,28 +166,6 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
     catch (error) {
         console.log(error.message);
         return [];
-    }
-});
-exports.getMatches = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
-    }
-    const userID = context.auth.uid;
-    try {
-        const res = [];
-        const user = await getUser(userID);
-        const userData = user.data();
-        const matches = (userData === null || userData === void 0 ? void 0 : userData.matches) || [];
-        console.log(matches);
-        for (const match of matches) {
-            const matchedUser = await getUser(match.id);
-            res.push(matchedUser.data());
-        }
-        console.log(res);
-        return res;
-    }
-    catch (error) {
-        console.log('Error getting matches', error.message);
     }
 });
 //# sourceMappingURL=index.js.map

@@ -44,8 +44,8 @@ const createMessageBox = async (user, likedUser) => {
         likedUser.ref.set(
             {
                 messages: [
-                    ...(user.data()?.messages || []),
-                    {messageBoxID: messageBoxRef.id, userIDs: [user.data().id, likedUser.data().id]},
+                    ...(likedUser.data()?.messages || []),
+                    {messageBoxID: messageBoxRef.id, userIDs: [likedUser.data().id, user.data().id]},
                 ],
             },
             {merge: true}
@@ -138,7 +138,7 @@ exports.swipedLeft = functions.https.onCall(async (data, context) => {
         userRef
             .set(
                 {
-                    dislikedUser: [...(userData?.disLiked || []), dislikedUserData?.id],
+                    disLiked: [...(userData?.disLiked || []), dislikedUserData?.id],
                 },
                 {merge: true}
             )
@@ -171,8 +171,7 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
                 .get()
         ).docs
             .filter(
-                (user) =>
-                    user?.data().email !== email &&
+                (user) => user?.data().email !== email &&
                     !disLiked.includes(user.data().id) &&
                     !matches.includes(user.data().id) &&
                     !liked.includes(user.data().id)
@@ -181,30 +180,5 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
     } catch (error) {
         console.log(error.message)
         return []
-    }
-})
-
-exports.getMatches = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!')
-    }
-
-    const userID = context.auth.uid
-
-    try {
-        const res: any[] = []
-        const user = await getUser(userID)
-        const userData = user.data()
-        const matches = userData?.matches || []
-        console.log(matches)
-
-        for (const match of matches) {
-            const matchedUser = await getUser(match.id)
-            res.push(matchedUser.data())
-        }
-        console.log(res)
-        return res
-    } catch (error) {
-        console.log('Error getting matches', error.message)
     }
 })
