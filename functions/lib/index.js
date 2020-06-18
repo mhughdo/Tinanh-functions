@@ -36,6 +36,12 @@ const getUser = async (id) => {
         .doc(`users/${id}`)
         .get();
 };
+const calculateAge = (dob) => {
+    const converted = new Date(dob);
+    const userYear = converted.getFullYear();
+    const thisYear = new Date().getFullYear();
+    return thisYear - userYear;
+};
 const createMessageBox = async (user, likedUser) => {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     try {
@@ -91,12 +97,14 @@ exports.swipedUpOrRight = functions.https.onCall(async (data, context) => {
         const likedUserRef = likedUser.ref;
         const isMatch = (_a = userData === null || userData === void 0 ? void 0 : userData.isLiked) === null || _a === void 0 ? void 0 : _a.find((user) => user.id === (likedUser === null || likedUser === void 0 ? void 0 : likedUser.id));
         if (isMatch) {
+            const userMatches = [...((userData === null || userData === void 0 ? void 0 : userData.matches) || []), { id: likedUserID, matchDate: Date.now() }];
             userRef.set({
-                matches: [...((userData === null || userData === void 0 ? void 0 : userData.matches) || []), { id: likedUserID, matchDate: Date.now() }],
+                matches: userMatches,
                 isLiked: userData === null || userData === void 0 ? void 0 : userData.isLiked.filter((user) => user.id !== (likedUser === null || likedUser === void 0 ? void 0 : likedUser.id)),
             }, { merge: true });
+            const likedUserMatches = [...((likedUserData === null || likedUserData === void 0 ? void 0 : likedUserData.matches) || []), { id: userID, matchDate: Date.now() }];
             likedUserRef.set({
-                matches: [...((likedUserData === null || likedUserData === void 0 ? void 0 : likedUserData.matches) || []), { id: userID, matchDate: Date.now() }],
+                matches: likedUserMatches,
             }, { merge: true });
             const messageBoxID = await createMessageBox(user, likedUser);
             return { matches: true, messageBoxID, user: likedUserData };
@@ -138,7 +146,9 @@ exports.swipedLeft = functions.https.onCall(async (data, context) => {
         return true;
     }
     catch (error) {
-        throw new functions.https.HttpsError('unknown', error.message);
+        // throw new functions.https.HttpsError('unknown', error.message)
+        console.log(error.message);
+        return null;
     }
 });
 exports.getUsers = functions.https.onCall(async (data, context) => {
@@ -150,6 +160,10 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
         const user = await getUser(context.auth.uid);
         const userData = user.data();
         const email = userData === null || userData === void 0 ? void 0 : userData.email;
+        const userSettings = (userData === null || userData === void 0 ? void 0 : userData.settings) || {};
+        const gender = (userSettings === null || userSettings === void 0 ? void 0 : userSettings.gender) || 'Everyone';
+        const minAge = (userSettings === null || userSettings === void 0 ? void 0 : userSettings.minAge) || 0;
+        const maxAge = (userSettings === null || userSettings === void 0 ? void 0 : userSettings.maxAge) || 25;
         const disLiked = ((_a = userData === null || userData === void 0 ? void 0 : userData.disLiked) === null || _a === void 0 ? void 0 : _a.map((user) => user.id)) || [];
         const liked = (userData === null || userData === void 0 ? void 0 : userData.liked) || [];
         const matches = ((_b = userData === null || userData === void 0 ? void 0 : userData.matches) === null || _b === void 0 ? void 0 : _b.map((user) => user.id)) || [];
@@ -161,6 +175,23 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
             !disLiked.includes(user.data().id) &&
             !matches.includes(user.data().id) &&
             !liked.includes(user.data().id))
+            .filter((user) => {
+            var _a, _b, _c;
+            const userAge = calculateAge((_a = user.data().dob) === null || _a === void 0 ? void 0 : _a.toDate());
+            if (gender === 'Everyone') {
+                if (userAge > minAge && userAge < maxAge) {
+                    return true;
+                }
+                return false;
+            }
+            if (((_c = (_b = user.data()) === null || _b === void 0 ? void 0 : _b.gender) === null || _c === void 0 ? void 0 : _c.toLowerCase()) === (gender === null || gender === void 0 ? void 0 : gender.toLowerCase())) {
+                if (userAge > minAge && userAge < maxAge) {
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        })
             .map((user) => user.data());
     }
     catch (error) {
@@ -183,18 +214,43 @@ exports.unMatch = functions.https.onCall(async (data, context) => {
         const userData = user.data();
         const unMatchUser = await getUser(unMatchUserID);
         const unMatchUserData = unMatchUser.data();
-        user.ref.set({
+        user.ref.update({
             matches: (_a = userData === null || userData === void 0 ? void 0 : userData.matches) === null || _a === void 0 ? void 0 : _a.filter((match) => match.id !== unMatchUserID),
             messages: (_b = userData === null || userData === void 0 ? void 0 : userData.messages) === null || _b === void 0 ? void 0 : _b.filter((message) => !message.userIDs.includes(unMatchUserID)),
-        }, { merge: true });
-        unMatchUser.ref.set({
+        });
+        unMatchUser.ref.update({
             matches: (_c = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.matches) === null || _c === void 0 ? void 0 : _c.filter((match) => match.id !== userID),
             messages: (_d = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.messages) === null || _d === void 0 ? void 0 : _d.filter((message) => !message.userIDs.includes(userID)),
-        }, { merge: true });
+        });
         return true;
     }
     catch (error) {
         console.log(error.message);
+        return false;
+    }
+});
+exports.updateSettings = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
+    }
+    try {
+        const minAge = (data === null || data === void 0 ? void 0 : data.minAge) || 0;
+        const maxAge = (data === null || data === void 0 ? void 0 : data.maxAge) || 25;
+        const gender = (data === null || data === void 0 ? void 0 : data.gender) || 'Everyone';
+        const userID = context.auth.uid;
+        const user = await getUser(userID);
+        const userRef = user.ref;
+        await userRef.set({
+            settings: {
+                minAge,
+                maxAge,
+                gender,
+            },
+        }, { merge: true });
+        return true;
+    }
+    catch (error) {
+        console.log(error);
         return false;
     }
 });
