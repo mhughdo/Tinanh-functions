@@ -22,6 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable prefer-arrow-callback */
 /* eslint-disable no-shadow */
 /* eslint-disable operator-linebreak */
 const functions = __importStar(require("firebase-functions"));
@@ -78,7 +79,7 @@ const createMessageBox = async (user, likedUser) => {
         console.log('Error creating message box', error.message);
     }
 };
-exports.swipedUpOrRight = functions.https.onCall(async (data, context) => {
+exports.swipedUpOrRight = functions.https.onCall(async function swipedUpOrRight(data, context) {
     var _a;
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
@@ -123,7 +124,7 @@ exports.swipedUpOrRight = functions.https.onCall(async (data, context) => {
         return { matches: false };
     }
 });
-exports.swipedLeft = functions.https.onCall(async (data, context) => {
+exports.swipedLeft = functions.https.onCall(async function swipeLeft(data, context) {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
     }
@@ -148,10 +149,10 @@ exports.swipedLeft = functions.https.onCall(async (data, context) => {
     catch (error) {
         // throw new functions.https.HttpsError('unknown', error.message)
         console.log(error.message);
-        return null;
+        return false;
     }
 });
-exports.getUsers = functions.https.onCall(async (data, context) => {
+exports.getUsers = functions.https.onCall(async function getUsers(data, context) {
     var _a, _b;
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
@@ -199,7 +200,7 @@ exports.getUsers = functions.https.onCall(async (data, context) => {
         return [];
     }
 });
-exports.unMatch = functions.https.onCall(async (data, context) => {
+exports.unMatch = functions.https.onCall(async function unMatch(data, context) {
     var _a, _b, _c, _d;
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
@@ -214,11 +215,11 @@ exports.unMatch = functions.https.onCall(async (data, context) => {
         const userData = user.data();
         const unMatchUser = await getUser(unMatchUserID);
         const unMatchUserData = unMatchUser.data();
-        user.ref.update({
+        await user.ref.update({
             matches: (_a = userData === null || userData === void 0 ? void 0 : userData.matches) === null || _a === void 0 ? void 0 : _a.filter((match) => match.id !== unMatchUserID),
             messages: (_b = userData === null || userData === void 0 ? void 0 : userData.messages) === null || _b === void 0 ? void 0 : _b.filter((message) => !message.userIDs.includes(unMatchUserID)),
         });
-        unMatchUser.ref.update({
+        await unMatchUser.ref.update({
             matches: (_c = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.matches) === null || _c === void 0 ? void 0 : _c.filter((match) => match.id !== userID),
             messages: (_d = unMatchUserData === null || unMatchUserData === void 0 ? void 0 : unMatchUserData.messages) === null || _d === void 0 ? void 0 : _d.filter((message) => !message.userIDs.includes(userID)),
         });
@@ -229,7 +230,7 @@ exports.unMatch = functions.https.onCall(async (data, context) => {
         return false;
     }
 });
-exports.updateSettings = functions.https.onCall(async (data, context) => {
+exports.updateSettings = functions.https.onCall(async function updateSettings(data, context) {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Endpoint requires authentication!');
     }
